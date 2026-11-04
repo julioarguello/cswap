@@ -80,10 +80,10 @@ cat > "${CONTENTS}/Info.plist" <<PLIST
     <key>LSUIElement</key><true/>
     <key>NSHighResolutionCapable</key><true/>
     <key>NSHumanReadableCopyright</key><string>© 2026 Johannes Grof</string>
-    <key>SUFeedURL</key><string>https://github.com/jx-grxf/cswap/releases/latest/download/appcast.xml</string>
+    <key>SUFeedURL</key><string>${SPARKLE_FEED_URL:-https://github.com/jx-grxf/cswap/releases/latest/download/appcast.xml}</string>
     <key>SUPublicEDKey</key><string>${SPARKLE_PUBLIC_KEY}</string>
     <key>SUEnableInstallerLauncherService</key><true/>
-    <key>SUEnableAutomaticChecks</key><true/>
+    <key>SUEnableAutomaticChecks</key><${SPARKLE_AUTO_CHECKS:-true}/>
     <key>SUScheduledCheckInterval</key><integer>3600</integer>
 </dict>
 </plist>

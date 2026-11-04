@@ -1,0 +1,41 @@
+name: Fork build
+
+# Builds an ad-hoc signed CSwap.app from this fork for local installation.
+# Updates point at this fork's releases, so the upstream build never replaces it.
+
+on:
+  push:
+    branches: [fix/desktop-session-move]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+      - name: Package app bundle
+        env:
+          SPARKLE_FEED_URL: https://github.com/julioarguello/cswap/releases/latest/download/appcast.xml
+          SPARKLE_AUTO_CHECKS: "false"
+        run: ./build-app.sh
+      - name: Verify bundle
+        run: |
+          test -x CSwap.app/Contents/MacOS/CSwapBar
+          test -x CSwap.app/Contents/MacOS/cswap
+          CSwap.app/Contents/MacOS/cswap help >/dev/null
+          test "$(/usr/libexec/PlistBuddy -c 'Print :SUFeedURL' CSwap.app/Contents/Info.plist)" = "https://github.com/julioarguello/cswap/releases/latest/download/appcast.xml"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :SUEnableAutomaticChecks' CSwap.app/Contents/Info.plist)" = "false"
+          codesign --verify --deep --strict CSwap.app
+          open -n CSwap.app
+          sleep 2
+          pgrep -x CSwapBar
+          pkill -x CSwapBar
+      - name: Zip
+        run: ditto -c -k --keepParent CSwap.app CSwap-fork.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CSwap-fork
+          path: CSwap-fork.zip
+          retention-days: 30
