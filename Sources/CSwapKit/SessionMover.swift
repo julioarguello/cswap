@@ -186,8 +186,18 @@ struct ProcessTable {
         let ppid: Int32
         let argv0: String
 
+        /// `argv0` is the first space-separated word of `ps args`, which cuts
+        /// paths that contain a space. Claude Desktop runs its bundled CLI
+        /// from `~/Library/Application Support/Claude/claude-code/…`, so its
+        /// sessions only match by the executable's real path.
         var isClaude: Bool {
-            (argv0 as NSString).lastPathComponent == "claude" || argv0.contains("/claude/versions/")
+            if Self.isClaudePath(argv0) { return true }
+            guard let path = ProcessTable.executablePath(of: pid) else { return false }
+            return Self.isClaudePath(path)
+        }
+
+        static func isClaudePath(_ path: String) -> Bool {
+            (path as NSString).lastPathComponent == "claude" || path.contains("/claude/versions/")
         }
     }
 
@@ -212,6 +222,13 @@ struct ProcessTable {
             entries[pid] = Entry(pid: pid, ppid: ppid, argv0: argv0)
         }
         return ProcessTable(entries: entries)
+    }
+
+    /// Full path of the executable `pid` runs, or nil when macOS won't say.
+    static func executablePath(of pid: Int32) -> String? {
+        var buffer = [CChar](repeating: 0, count: 4 * Int(MAXPATHLEN))
+        guard proc_pidpath(pid, &buffer, UInt32(buffer.count)) > 0 else { return nil }
+        return String(cString: buffer)
     }
 
     /// Current directory of `pid`, or nil when macOS won't say.
